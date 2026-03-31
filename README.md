@@ -10,10 +10,13 @@ Existing manually-added LuLu rules are never touched. All managed rules use a de
 - [LuLu](https://objective-see.org/products/lulu.html) installed
 - [lulu-cli](https://github.com/woop/lulu-cli) installed
 - Python 3 (ships with macOS)
-
-Install `lulu-cli` via Homebrew:
+- Xcode Command Line Tools (for `swiftc`, used to compile the plist helper)
 
 ```bash
+# Install Xcode Command Line Tools
+xcode-select --install
+
+# Install lulu-cli
 brew install woop/tap/lulu-cli
 ```
 
@@ -25,8 +28,11 @@ sudo bash install.sh
 
 This will:
 1. Copy the package to `/usr/local/lib/lulu-rules/`
-2. Register `/Library/LaunchDaemons/com.lulu-rules.plist`
-3. Run the first feed fetch immediately
+2. Compile the Swift plist helper (`lulu-rules-helper`) with `swiftc -O`
+3. Register `/Library/LaunchDaemons/com.lulu-rules.plist`
+4. Run the first feed fetch immediately
+
+> **Re-run `install.sh` after any update** to recompile the Swift helper and redeploy the Python package.
 
 Monitor the first run:
 
@@ -107,25 +113,31 @@ validator.py — classify as IPv4, IPv6, CIDR, or domain; discard private/reserv
     │
     ▼
 state.py — compute delta against /var/db/lulu-rules/state.json
-    │         to_add  = new threats not yet in LuLu
+    │         to_add    = new threats not yet in LuLu
     │         to_remove = stale threats no longer in any feed
     ▼
-lulu_cli.py
-    for each in to_remove: lulu-cli delete --key com.lulu-rules.c2-feeds --uuid UUID
-    for each in to_add:    lulu-cli add    --key com.lulu-rules.c2-feeds --addr INDICATOR --action block
-    lulu-cli reload (once, after all changes)
+plist_writer.py — passes full batch to lulu-rules-helper via JSON on stdin
+    │
+    ▼
+lulu-rules-helper (compiled Swift binary)
+    single read of /Library/Objective-See/LuLu/rules.plist
+    apply all removes + adds in memory
+    single atomic write back to rules.plist
+    │
+    ▼
+lulu-cli reload  (once, immediately after plist write)
     │
     ▼
 state.py — save updated state (atomic write)
 ```
 
-State is persisted at `/var/db/lulu-rules/state.json`. Each indicator is tracked with its lulu-cli UUID so individual rules can be removed precisely without touching anything else.
+Rule changes are applied in a **single plist read-modify-write** regardless of how many indicators change. `lulu-cli` is used only for the final `reload` call. State is persisted at `/var/db/lulu-rules/state.json` with each indicator's UUID, enabling precise per-rule removal on subsequent runs.
 
 ## Runtime paths
 
 | Path | Purpose |
 |------|---------|
-| `/usr/local/lib/lulu-rules/` | Installed package and config |
+| `/usr/local/lib/lulu-rules/` | Installed package, config, and compiled Swift helper |
 | `/var/db/lulu-rules/state.json` | Persisted indicator state |
 | `/var/log/lulu-rules/updater.log` | Rotating log (5 MB × 3) |
 | `/Library/LaunchDaemons/com.lulu-rules.plist` | Hourly scheduler |
