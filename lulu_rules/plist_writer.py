@@ -6,6 +6,8 @@ plist read-modify-write for the entire batch rather than one per indicator.
 This reduces O(n²) plist I/O to O(1) regardless of how many rules change.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os

@@ -1,5 +1,7 @@
 """Feed fetching and parsing for community C2 threat intel sources."""
 
+from __future__ import annotations
+
 import csv
 import io
 import logging

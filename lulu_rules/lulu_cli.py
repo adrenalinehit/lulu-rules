@@ -5,6 +5,8 @@ by plist_writer.py (the compiled Swift helper) which does a single
 plist read-modify-write for the whole batch.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import subprocess
