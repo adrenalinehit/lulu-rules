@@ -115,6 +115,7 @@ def collect_all_indicators(feeds_config: list[dict], state: dict) -> dict[str, s
     or fetch failed) — their existing indicators in state must be preserved.
     """
     ip_set: set[str] = set()
+    cidr_set: set[str] = set()
     domain_set: set[str] = set()
     # Track which feeds we successfully fetched new data for
     fetched_feed_ids: set[str] = set()
@@ -157,6 +158,9 @@ def collect_all_indicators(feeds_config: list[dict], state: dict) -> dict[str, s
             if kind == "ip":
                 ip_set.add(raw)
                 valid_count += 1
+            elif kind == "cidr":
+                cidr_set.add(raw)
+                valid_count += 1
             elif kind == "domain":
                 domain_set.add(raw)
                 valid_count += 1
@@ -172,13 +176,14 @@ def collect_all_indicators(feeds_config: list[dict], state: dict) -> dict[str, s
         record_feed_fetch(state, feed["id"], valid_count)
         fetched_feed_ids.add(feed["id"])
 
-    total = len(ip_set) + len(domain_set)
+    total = len(ip_set) + len(cidr_set) + len(domain_set)
     logger.info(
-        "Collected %d unique indicators total (%d IPs, %d domains) from %d/%d feeds.",
+        "Collected %d unique indicators total (%d IPs, %d CIDRs, %d domains) from %d/%d feeds.",
         total,
         len(ip_set),
+        len(cidr_set),
         len(domain_set),
         len(fetched_feed_ids),
         len(feeds_config),
     )
-    return {"ip": ip_set, "domain": domain_set, "skipped_feed_ids": skipped_feed_ids}
+    return {"ip": ip_set, "cidr": cidr_set, "domain": domain_set, "skipped_feed_ids": skipped_feed_ids}

@@ -27,6 +27,28 @@ def is_valid_ipv4(addr: str) -> bool:
     )
 
 
+def is_valid_cidr(addr: str) -> bool:
+    """Return True if addr is a valid, routable IPv4 CIDR range."""
+    if '/' not in addr:
+        return False
+    try:
+        # strict=False accepts host addresses with host bits set (e.g. 1.2.3.4/24)
+        net = ipaddress.ip_network(addr, strict=False)
+    except ValueError:
+        return False
+    if not isinstance(net, ipaddress.IPv4Network):
+        return False
+    # Reject ranges that are entirely private/reserved
+    return not (
+        net.is_private
+        or net.is_loopback
+        or net.is_link_local
+        or net.is_multicast
+        or net.is_reserved
+        or net.is_unspecified
+    )
+
+
 def is_valid_domain(domain: str) -> bool:
     """Return True if domain looks like a valid FQDN (no DNS lookup performed)."""
     if not domain or len(domain) > 253:
@@ -38,10 +60,12 @@ def is_valid_domain(domain: str) -> bool:
 
 
 def classify_indicator(value: str) -> str | None:
-    """Return 'ip', 'domain', or None if the value is not a valid indicator."""
+    """Return 'ip', 'cidr', 'domain', or None if the value is not a valid indicator."""
     value = value.strip()
     if not value:
         return None
+    if '/' in value:
+        return 'cidr' if is_valid_cidr(value) else None
     if is_valid_ipv4(value):
         return 'ip'
     if is_valid_domain(value):

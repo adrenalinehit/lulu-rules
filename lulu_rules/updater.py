@@ -111,13 +111,14 @@ def main() -> None:
     # Fetch and parse all feeds
     result = collect_all_indicators(feeds_config, state)
     ip_set: set = result["ip"]
+    cidr_set: set = result["cidr"]
     domain_set: set = result["domain"]
     skipped_feed_ids: set = result["skipped_feed_ids"]
 
     # Build the full desired indicator set.
     # For feeds that were skipped (throttled or failed), preserve their previously
     # applied indicators so they are not removed.
-    new_indicators = ip_set | domain_set
+    new_indicators = ip_set | cidr_set | domain_set
 
     # Identify which indicators belong to skipped feeds by checking state.
     # We don't store per-feed indicator lists, so we approximate: any indicator
