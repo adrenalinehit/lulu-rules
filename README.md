@@ -57,15 +57,17 @@ Stops the daemon, removes all managed LuLu rules, and deletes the installed file
 
 ## Feeds
 
-| Feed | Type | Interval |
-|------|------|----------|
-| [Feodo Tracker](https://feodotracker.abuse.ch/blocklist/) — abuse.ch | IPs | 1h |
-| [SSLBL Botnet C2 IPs](https://sslbl.abuse.ch/blacklist/) — abuse.ch | IPs | 1h |
+| Feed | Indicators | Interval |
+|------|-----------|----------|
+| [Feodo Tracker](https://feodotracker.abuse.ch/blocklist/) — abuse.ch | IPv4 | 1h |
+| [SSLBL Botnet C2 IPs](https://sslbl.abuse.ch/blacklist/) — abuse.ch | IPv4 | 1h |
 | [Bambenek C2 Domains](https://osint.bambenekconsulting.com/feeds/) (high confidence) | Domains | 1h |
-| [montysecurity C2-Tracker](https://github.com/montysecurity/C2-Tracker) | IPs | 24h |
-| [bitwire-it Outbound Blocklist](https://github.com/bitwire-it/ipblocklist) | IPs | 2h |
+| [montysecurity C2-Tracker](https://github.com/montysecurity/C2-Tracker) | IPv4 | 24h |
+| [bitwire-it Outbound Blocklist](https://github.com/bitwire-it/ipblocklist) | IPv4, CIDR | 2h |
 
 All feeds are freely available and require no authentication. Feed fetch failures are non-fatal — previously applied indicators for a failed feed are preserved until the next successful fetch.
+
+Supported indicator types: IPv4 addresses, IPv6 addresses, IPv4/IPv6 CIDR ranges, and domain names. Private, loopback, link-local, and reserved ranges are rejected before any rule is applied.
 
 ## Adding a feed
 
@@ -101,7 +103,7 @@ config/feeds.json
 feeds.py — fetch + parse each feed (respecting per-feed intervals)
     │
     ▼
-validator.py — discard private IPs, malformed domains
+validator.py — classify as IPv4, IPv6, CIDR, or domain; discard private/reserved/malformed
     │
     ▼
 state.py — compute delta against /var/db/lulu-rules/state.json
