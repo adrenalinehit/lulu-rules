@@ -25,9 +25,13 @@ def parse_plaintext_comments(content: str) -> list[str]:
         line = line.strip()
         if not line or line.startswith('#'):
             continue
-        # Some feeds include port numbers (e.g. "1.2.3.4:447") — strip port
-        if ':' in line and not line.startswith('#'):
-            line = line.split(':')[0].strip()
+        # Strip port suffix from IPv4:port entries (e.g. "1.2.3.4:447" → "1.2.3.4").
+        # Only applies when there is exactly one colon and the suffix is a port number —
+        # IPv6 addresses contain multiple colons and must not be modified.
+        if line.count(':') == 1:
+            host, _, suffix = line.partition(':')
+            if suffix.isdigit():
+                line = host.strip()
         results.append(line)
     return results
 

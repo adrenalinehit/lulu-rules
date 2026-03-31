@@ -27,16 +27,32 @@ def is_valid_ipv4(addr: str) -> bool:
     )
 
 
+def is_valid_ipv6(addr: str) -> bool:
+    """Return True if addr is a valid, routable IPv6 address."""
+    try:
+        obj = ipaddress.ip_address(addr)
+    except ValueError:
+        return False
+    if not isinstance(obj, ipaddress.IPv6Address):
+        return False
+    return not (
+        obj.is_private
+        or obj.is_loopback
+        or obj.is_link_local
+        or obj.is_multicast
+        or obj.is_reserved
+        or obj.is_unspecified
+    )
+
+
 def is_valid_cidr(addr: str) -> bool:
-    """Return True if addr is a valid, routable IPv4 CIDR range."""
+    """Return True if addr is a valid, routable IPv4 or IPv6 CIDR range."""
     if '/' not in addr:
         return False
     try:
         # strict=False accepts host addresses with host bits set (e.g. 1.2.3.4/24)
         net = ipaddress.ip_network(addr, strict=False)
     except ValueError:
-        return False
-    if not isinstance(net, ipaddress.IPv4Network):
         return False
     # Reject ranges that are entirely private/reserved
     return not (
@@ -66,8 +82,17 @@ def classify_indicator(value: str) -> str | None:
         return None
     if '/' in value:
         return 'cidr' if is_valid_cidr(value) else None
-    if is_valid_ipv4(value):
-        return 'ip'
+    # Try parsing as an IP address first. If it parses as one (even a private/reserved
+    # address), do not fall through to domain checking — dotted-decimal IPs like
+    # 192.168.1.1 would otherwise match the domain regex.
+    try:
+        obj = ipaddress.ip_address(value)
+        if isinstance(obj, ipaddress.IPv4Address):
+            return 'ip' if is_valid_ipv4(value) else None
+        if isinstance(obj, ipaddress.IPv6Address):
+            return 'ip' if is_valid_ipv6(value) else None
+    except ValueError:
+        pass
     if is_valid_domain(value):
         return 'domain'
     return None
