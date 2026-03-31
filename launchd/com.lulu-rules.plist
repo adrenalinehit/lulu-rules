@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.lulu-rules</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>-m</string>
+        <string>lulu_rules.updater</string>
+        <string>--config</string>
+        <string>/usr/local/lib/lulu-rules/config/feeds.json</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/usr/local/lib/lulu-rules</string>
+
+    <!-- Run every hour -->
+    <key>StartInterval</key>
+    <integer>3600</integer>
+
+    <!-- Run immediately when the daemon is loaded (e.g. after install or reboot) -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/var/log/lulu-rules/updater.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/var/log/lulu-rules/updater-error.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- Cover both Intel (/usr/local/bin) and Apple Silicon (/opt/homebrew/bin) Homebrew paths -->
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <!-- Restart if the process exits with a non-zero code -->
+    <key>ThrottleInterval</key>
+    <integer>300</integer>
+</dict>
+</plist>

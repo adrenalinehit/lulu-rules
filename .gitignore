@@ -1,0 +1,7 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# State and logs (runtime files, not part of the repo)
+state.json
+*.log
