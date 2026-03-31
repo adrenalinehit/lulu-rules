@@ -76,7 +76,6 @@ def main() -> None:
         compute_delta,
         load_state,
         save_state,
-        update_state_after_add,
         update_state_after_remove,
     )
 
@@ -169,16 +168,30 @@ def main() -> None:
         clear_managed=args.force_rebuild,
     )
 
-    # Update state to match what was written
+    # Reload LuLu immediately — before the state update, which can be slow.
+    # Rules are already in the plist; we must not skip reload due to a slow loop.
+    if lulu_running:
+        reload_lulu(lulu_cli_path)
+    else:
+        logger.info("Changes staged. LuLu will pick them up when it next starts.")
+
+    # Update state to match what was written.
+    # Bulk-assign rather than looping per-indicator to keep this O(n log n),
+    # not O(n²) (the previous per-call list membership test was O(n) × n items).
     if args.force_rebuild:
-        state["applied_indicators"] = []
-        state["indicator_to_uuid"] = {}
-
-    for indicator in to_remove:
-        update_state_after_remove(state, indicator)
-
-    for indicator, rule_uuid in added_uuids.items():
-        update_state_after_add(state, indicator, rule_uuid)
+        # Full replacement: state is entirely the new set of rules
+        state["applied_indicators"] = sorted(added_uuids.keys())
+        state["indicator_to_uuid"] = dict(added_uuids)
+    else:
+        # Delta update: remove stale entries, merge in new ones
+        for indicator in to_remove:
+            update_state_after_remove(state, indicator)
+        existing_set = set(state["applied_indicators"])
+        for indicator, rule_uuid in added_uuids.items():
+            if indicator not in existing_set:
+                state["applied_indicators"].append(indicator)
+                existing_set.add(indicator)
+            state["indicator_to_uuid"][indicator] = rule_uuid
 
     save_state(state, STATE_PATH)
 
@@ -188,11 +201,6 @@ def main() -> None:
         len(to_remove),
         len(state["applied_indicators"]),
     )
-
-    if lulu_running:
-        reload_lulu(lulu_cli_path)
-    else:
-        logger.info("Changes staged. LuLu will pick them up when it next starts.")
 
 
 if __name__ == "__main__":
