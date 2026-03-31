@@ -36,8 +36,15 @@ if ! command -v lulu-cli &>/dev/null; then
     exit 1
 fi
 
+if ! command -v swiftc &>/dev/null; then
+    echo "Error: swiftc not found. Install Xcode Command Line Tools:"
+    echo "  xcode-select --install"
+    exit 1
+fi
+
 echo "lulu-cli found at: $(command -v lulu-cli)"
-echo "python3 found at: $(command -v python3)"
+echo "python3  found at: $(command -v python3)"
+echo "swiftc   found at: $(command -v swiftc)"
 
 # ---------------------------------------------------------------------------
 # Create directories
@@ -59,6 +66,18 @@ cp -r "$SCRIPT_DIR/config/" "$INSTALL_DIR/config/"
 chown -R root:wheel "$INSTALL_DIR"
 chmod -R 644 "$INSTALL_DIR/lulu_rules/"*.py
 chmod -R 644 "$INSTALL_DIR/config/"*.json
+
+# ---------------------------------------------------------------------------
+# Compile the Swift plist helper
+# ---------------------------------------------------------------------------
+
+echo "Compiling Swift plist helper..."
+swiftc "$SCRIPT_DIR/scripts/plist_helper.swift" \
+    -O \
+    -o "$INSTALL_DIR/lulu-rules-helper" 2>&1
+chown root:wheel "$INSTALL_DIR/lulu-rules-helper"
+chmod 755 "$INSTALL_DIR/lulu-rules-helper"
+echo "Swift helper compiled at $INSTALL_DIR/lulu-rules-helper"
 
 # ---------------------------------------------------------------------------
 # Install LaunchDaemon

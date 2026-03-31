@@ -22,13 +22,20 @@ if launchctl print "system/$DAEMON_LABEL" &>/dev/null 2>&1; then
 fi
 rm -f "$DAEMON_DEST"
 
-# Remove managed LuLu rules
-if command -v lulu-cli &>/dev/null; then
+# Remove managed LuLu rules via the helper (single plist write — fast)
+HELPER="$INSTALL_DIR/lulu-rules-helper"
+if [[ -x "$HELPER" ]]; then
     echo "Removing managed LuLu block rules..."
+    echo '{"add":[],"remove":[],"clear_managed":true}' | "$HELPER" && true
+    if command -v lulu-cli &>/dev/null; then
+        lulu-cli reload 2>/dev/null || true
+    fi
+elif command -v lulu-cli &>/dev/null; then
+    echo "Removing managed LuLu block rules (via lulu-cli)..."
     lulu-cli delete --key com.lulu-rules.c2-feeds 2>/dev/null || true
     lulu-cli reload 2>/dev/null || true
 else
-    echo "Warning: lulu-cli not found — managed rules may remain in LuLu."
+    echo "Warning: neither lulu-rules-helper nor lulu-cli found — managed rules may remain in LuLu."
 fi
 
 # Remove installed files
