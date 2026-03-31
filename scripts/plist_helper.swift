@@ -179,11 +179,13 @@ for spec in toAddSpecs {
     let rule              = Rule()
     rule.uuid             = ruleUUID
     rule.key              = MANAGED_KEY
+    rule.name             = "lulu-rules"   // LuLu's UI passes this to setStringValue: — must not be nil
     rule.path             = "*"
     rule.action           = RULE_STATE_BLOCK
     rule.type             = RULE_TYPE_USER
     rule.scope            = ACTION_SCOPE_ENDPOINT
     rule.endpointAddr     = addr
+    rule.endpointHost     = addr           // also displayed in the rules table — must not be nil
     rule.endpointPort     = "*"
     rule.creation         = now
     managedRules.add(rule)
